@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SearchMind</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 min-h-screen text-slate-100">
+  <div class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="h-9 w-9 rounded-2xl bg-white/10 flex items-center justify-center shadow-lg">
+            <span class="text-xl font-bold">SM</span>
+          </div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-semibold tracking-tight">
+              SearchMind
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-100/80">
+              Upload PDFs & DOCX → Ask anything from them
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1">
+      <div class="max-w-6xl mx-auto px-4 py-6 grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <!-- Left: Upload & docs -->
+        <section class="space-y-4">
+          <!-- Upload card -->
+          <div class="bg-slate-900/70 backdrop-blur border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <h2 class="text-base font-semibold mb-2 flex items-center gap-2">
+              <span
+                class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold"
+                >1</span
+              >
+              Upload documents
+            </h2>
+            <p class="text-xs text-slate-400 mb-4">
+              Supported formats: <span class="font-semibold text-slate-200">PDF, DOCX</span>.  
+              They’ll be chunked, embedded and stored in Pinecone automatically.
+            </p>
+
+            <form id="upload-form" class="space-y-3">
+              <label
+                for="file"
+                class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-700 rounded-xl cursor-pointer bg-slate-900/60 hover:bg-slate-900 transition"
+              >
+                <div class="flex flex-col items-center justify-center pt-2 pb-3">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-8 w-8 mb-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="1.5"
+                      d="M12 16V4m0 0L8 8m4-4 4 4M6 16h12"
+                    />
+                  </svg>
+                  <p class="text-xs">
+                    <span class="font-semibold">Click to upload</span>
+                    <span class="text-slate-400"> or drag & drop</span>
+                  </p>
+                  <p class="text-[10px] text-slate-500 mt-1">
+                    Max ~10-20MB per file (depending on server config)
+                  </p>
+                </div>
+                <input id="file" name="file" type="file" class="hidden" />
+                <p id="selected-file" class="text-xs text-slate-300 mt-2 hidden"></p>
+
+              </label>
+
+              <button
+                type="submit"
+                class="w-full inline-flex justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 px-3 py-2 text-sm font-medium shadow-lg shadow-indigo-500/30 hover:from-indigo-400 hover:to-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                <span id="upload-button-text">Upload & Index</span>
+                <span
+                  id="upload-spinner"
+                  class="hidden h-4 w-4 border-2 border-white/30 border-t-transparent rounded-full animate-spin"
+                ></span>
+              </button>
+            </form>
+
+            <p id="upload-status" class="mt-2 text-xs text-slate-300"></p>
+          </div>
+
+          <!-- Documents list -->
+          <div class="bg-slate-900/70 backdrop-blur border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-base font-semibold flex items-center gap-2">
+                <span
+                  class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold"
+                  >2</span
+                >
+                Your indexed documents
+              </h2>
+              <button
+                id="refresh-docs"
+                class="text-[11px] px-2.5 py-1 rounded-full border border-slate-700 hover:border-slate-500 text-slate-300"
+              >
+                Refresh
+              </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-2">
+              Select which documents you want the chatbot to use when answering.
+            </p>
+
+            <div
+              id="documents-list"
+              class="space-y-2 max-h-64 overflow-y-auto pr-1 text-xs"
+            >
+              <p class="text-slate-500 text-xs italic">No documents loaded yet.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right: Chat -->
+        <section class="bg-slate-900/70 backdrop-blur border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold flex items-center gap-2">
+              <span
+                class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold"
+                >3</span
+              >
+              Ask questions from your docs
+            </h2>
+          </div>
+
+          <div
+            id="chat-window"
+            class="flex-1 rounded-xl border border-slate-800 bg-slate-950/60 p-3 overflow-y-auto text-xs space-y-3"
+          >
+            <div class="text-slate-500 text-xs italic">
+              Chatbot is ready. Upload a document, select it on the left, then ask your
+              question here.
+            </div>
+          </div>
+
+          <form id="chat-form" class="mt-3 flex items-center gap-2">
+          <textarea
+              id="chat-input"
+              rows="2"
+              class="flex-1 text-xs rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/70 resize-none h-12"
+              placeholder="Ask something like: “Summarize section 2 of my research paper…”"
+          ></textarea>
+
+          <button
+              type="submit"
+              id="chat-send-btn"
+              class="h-10 px-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-xs font-semibold text-white whitespace-nowrap"
+          >
+              Send
+          </button>
+       </form>
+
+
+          <p id="chat-status" class="mt-1 text-[11px] text-slate-400"></p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
